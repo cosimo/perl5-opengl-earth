@@ -20,7 +20,6 @@ BEGIN { $| = 1 }
 
 use strict;
 use OpenGL q(:all);
-use Math::Trig;
 use Imager;
 
 use constant PROGRAM_TITLE => 'OpenGL Earth';
