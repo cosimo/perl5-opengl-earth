@@ -20,7 +20,6 @@ BEGIN { $| = 1 }
 
 use strict;
 use OpenGL q(:all);
-use Imager;
 
 use constant PROGRAM_TITLE => 'OpenGL Earth';
 
@@ -32,23 +31,23 @@ my $Window_Width = 600;
 my $Window_Height = 600;
 
 # Our display mode settings.
-my $Light_On = 0;
+my $Light_On = 1;
 my $Blend_On = 0;
-my $Texture_On = 0;
-my $Filtering_On = 0;
+my $Texture_On = 1;
+my $Filtering_On = 1;
 my $Alpha_Add = 0;
 
-my $Curr_TexMode = 0;
+my $Curr_TexMode = GL_MODULATE;
 my @TexModesStr = qw(GL_DECAL GL_MODULATE GL_BLEND GL_REPLACE);
 my @TexModes = (GL_DECAL, GL_MODULATE, GL_BLEND, GL_REPLACE);
 
 # Object and scene global variables.
 
 # Cube position and rotation speed variables.
-my $X_Rot   = 0.9;
+my $X_Rot   = 300.0;
 my $Y_Rot   = 0.0;
 my $X_Speed = 0.0;
-my $Y_Speed = 0.5;
+my $Y_Speed = 0.1;
 my $Z_Off   =-5.0;
 
 # Settings for our light.  Try playing with these (or add more lights).
@@ -158,7 +157,7 @@ sub cbRenderScene {
   {
       gluQuadricNormals($quad, GLU_SMOOTH);
       gluQuadricTexture($quad, GL_TRUE);
-      gluSphere($quad, 1.5, 32, 32);
+      gluSphere($quad, 1.5, 64, 64);
       gluDeleteQuadric($quad);
   }
 
@@ -335,24 +334,44 @@ sub ourBuildTextures {
   glBindTexture(GL_TEXTURE_2D, $Texture_ID[0]);
 
   # Iterate across the texture array.
+  open my $texf, '<', 'earth-texture.bin';
+  binmode $texf;
+  my $tex = q{};
+  my $buf;
+  while (sysread($texf, $buf, 1048576)) {
+    $tex .= $buf;
+  }
 
-  my $tex;
+  my $tex_w = 4096;
+  my $tex_h = 2048;
+
+=cut
+  #my $tex = File::Slurp::read_file('earthg.texture');
+
+  use Imager;
 
   my $scanline;
+  my $tex = q{};
   my $earth_pic = Imager->new();
-  #print "Reading earth pic...\n";
+  print "Reading earth pic...\n";
 
-  $earth_pic->read(file=>'earth.bmp') or die "Can't read texture!\n";
-
-  #print "Reading scanlines...\n";
+  $earth_pic->read(file=>'earth_4096_2048.bmp') or die "Can't read texture!\n";
+  
+  print "Reading scanlines...\n";
   my $tex_w = $earth_pic->getwidth();
   my $tex_h = $earth_pic->getheight();
   for (my $y = $tex_h - 1; $y >= 0; $y--) {
       $scanline = $earth_pic->getscanline(y=>$y);
       $tex .= $scanline;
   }
+  print "Texture built.\n";
 
-  #print "Texture built.\n";
+  open my $texf, '>', 'earth_big.texture'; 
+  binmode $texf;
+  print $texf $tex;
+  close $texf;
+
+=cut
 
   # The GLU library helps us build MipMaps for our texture.
   if ($gluerr = gluBuild2DMipmaps_s(GL_TEXTURE_2D, 4, $tex_w, $tex_h, GL_RGBA, GL_UNSIGNED_BYTE, $tex)) {
