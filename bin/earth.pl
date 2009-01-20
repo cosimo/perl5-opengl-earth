@@ -27,6 +27,8 @@ use constant PROGRAM_TITLE => 'OpenGL Earth';
 
 # Some global variables
 
+my $earth_texture = '../textures/earth_4k2.texture';
+
 # Window and texture IDs, window width and height.
 my $Window_ID;
 my $Window_Width = 600;
@@ -50,7 +52,7 @@ my @TexModes = (GL_DECAL, GL_MODULATE, GL_BLEND, GL_REPLACE);
 my $X_Rot   = 300;
 my $Y_Rot   = 0.0;
 my $X_Speed = 0.0;
-my $Y_Speed = 0.02;
+my $Y_Speed = 0.1;
 my $Z_Off   =-5.0;
 
 # Settings for our light.  Try playing with these (or add more lights).
@@ -136,18 +138,20 @@ sub ourPrintString {
 sub display_spikes {
 
 	# Get one more spike
-	if (! eof(STDIN)) {
-		my $line = <STDIN>;
-		my ($ip) = split(' ', $line, 2);
-		my ($a, $b, $c, $d) = split m{\.}, $ip;
-		my $lon = rand(360) - 180;
-		my $lat = rand(180) - 90;
-		push @network_hits, [ $lat, $lon, 100 ];
-	}
+	#if (1) { #! eof(STDIN)) {
+    #my $line = <STDIN>;
+    #my ($ip) = split(' ', $line, 2);
+    #my ($a, $b, $c, $d) = split m{\.}, $ip;
+    for (1..5) {
+        my $lon = rand(360) - 180;
+        my $lat = rand(180) - 90;
+        push @network_hits, [ $lat, $lon, 100 ];
+    }
+	#}
 
     for my $s (@network_hits) {
         display_spike($s->[0], $s->[1], $s->[2], 1.5);
-		$s->[2]--;
+		$s->[2] -= 4;
     }
 
     @network_hits = grep { $_->[2] > 0 } @network_hits;
@@ -428,7 +432,12 @@ sub ourBuildTextures {
   glBindTexture(GL_TEXTURE_2D, $Texture_ID[0]);
 
   # Iterate across the texture array.
-  open my $texf, '<', 'earth_4k2.texture';
+  open(my $texf, '<', $earth_texture) or
+    do {
+        glutDestroyWindow($Window_ID);
+        die "Can't open Earth texture '$earth_texture': $!\n"
+    };
+
   binmode $texf;
   my $tex = q{};
   my $buf;
