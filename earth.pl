@@ -19,7 +19,9 @@
 BEGIN { $| = 1 }
 
 use strict;
+use lib './lib';
 use OpenGL q(:all);
+use OpenGL::Earth::Coords;
 
 use constant PROGRAM_TITLE => 'OpenGL Earth';
 
@@ -29,6 +31,7 @@ use constant PROGRAM_TITLE => 'OpenGL Earth';
 my $Window_ID;
 my $Window_Width = 600;
 my $Window_Height = 600;
+our @Texture_ID;
 
 # Our display mode settings.
 my $Light_On = 1;
@@ -44,18 +47,28 @@ my @TexModes = (GL_DECAL, GL_MODULATE, GL_BLEND, GL_REPLACE);
 # Object and scene global variables.
 
 # Cube position and rotation speed variables.
-my $X_Rot   = 300.0;
+my $X_Rot   = 300;
 my $Y_Rot   = 0.0;
 my $X_Speed = 0.0;
-my $Y_Speed = 0.1;
+my $Y_Speed = 0.02;
 my $Z_Off   =-5.0;
 
 # Settings for our light.  Try playing with these (or add more lights).
-my @Light_Ambient  = ( 0.1, 0.1, 0.1, 1.0 );
+my @Light_Ambient  = ( 0.0, 0.0, 0.1, 0.2 );
 my @Light_Diffuse  = ( 1.2, 1.2, 1.2, 1.0 );
-my @Light_Position = ( 2.0, 2.0, 0.0, 1.0 );
+my @Light_Position = ( 4.0, 4.0, 2.0, 3.0);
 
+our @network_hits = ();
 
+# Check-up grid
+#
+#for (my $x = -180; $x <= 180; $x += 10) {
+#	for (my $y = -90; $y <= 90; $y += 10) {
+#		push @spikes, [ $y, $x, 10 ];
+#	}
+#}
+
+=cut
 # ------
 # Frames per second (FPS) statistic variables and routine.
 
@@ -79,6 +92,34 @@ sub ourDoFPS {
      $FrameCount = 0;
   }
 }
+=cut
+
+sub display_spike {
+  my ($lat, $long, $amount, $radius) = @_;
+
+  # Apply texture offset
+  $long -= 90;
+
+  my ($x1, $y1, $z1) = OpenGL::Earth::Coords::earth_to_xyz($lat, $long, $radius + $amount/200);
+  my ($x2, $y2, $z2) = OpenGL::Earth::Coords::earth_to_xyz($lat, $long + 0.4, $radius);
+  my ($x3, $y3, $z3) = OpenGL::Earth::Coords::earth_to_xyz($lat, $long - 0.4, $radius);
+
+  glBegin(GL_TRIANGLES);
+      glColor3f(1.0, 0.3, 0.3);
+      glVertex3f($x1, $y1, $z1);
+      glVertex3f($x2, $y2, $z2);
+      glVertex3f($x3, $y3, $z3);
+  glEnd();
+
+  #glLineWidth(1);
+  #glBegin(GL_LINES);
+  #    glColor4f(1.0, 0.2, 0.2, 0.6);
+  #    glVertex3f(0, 0, 0);
+  #    glVertex3f($x1, $y1, $z1);
+  #glEnd();
+
+  return;
+}
 
 # ------
 # String rendering routine; leverages on GLUT routine.
@@ -90,6 +131,27 @@ sub ourPrintString {
   for(@c) {
     glutBitmapCharacter($font, ord $_);
   }
+}
+
+sub display_spikes {
+
+	# Get one more spike
+	if (! eof(STDIN)) {
+		my $line = <STDIN>;
+		my ($ip) = split(' ', $line, 2);
+		my ($a, $b, $c, $d) = split m{\.}, $ip;
+		my $lon = rand(360) - 180;
+		my $lat = rand(180) - 90;
+		push @network_hits, [ $lat, $lon, 100 ];
+	}
+
+    for my $s (@network_hits) {
+        display_spike($s->[0], $s->[1], $s->[2], 1.5);
+		$s->[2]--;
+    }
+
+    @network_hits = grep { $_->[2] > 0 } @network_hits;
+
 }
 
 # ------
@@ -113,12 +175,14 @@ sub cbRenderScene {
   else {
     glDisable(GL_LIGHTING);
   }
-  if ($Alpha_Add) {
-    glBlendFunc(GL_SRC_ALPHA,GL_ONE);
-  }
-  else {
-    glBlendFunc(GL_SRC_ALPHA,GL_ONE_MINUS_SRC_ALPHA);
-  }
+
+  #if ($Alpha_Add) {
+  #  glBlendFunc(GL_SRC_ALPHA,GL_ONE);
+  #}
+  #else {
+  glBlendFunc(GL_SRC_ALPHA,GL_ONE_MINUS_SRC_ALPHA);
+  #}
+
   # If we're blending, we don'$t want z-buffering.
   if ($Blend_On) {
     glDisable(GL_DEPTH_TEST);
@@ -151,15 +215,45 @@ sub cbRenderScene {
   # Clear the color and depth buffers.
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-  glColor3f(0.6, 0.6, 0.6);
   my $quad = gluNewQuadric();
   if ($quad != 0)
   {
       gluQuadricNormals($quad, GLU_SMOOTH);
       gluQuadricTexture($quad, GL_TRUE);
+ 
+      #my @Earth_emission = (0.0, 0.0, 0.0, 1.0);
+      #my @Earth_specular = (0.3, 0.3, 0.3, 1.0);
+      #glMaterialf(GL_FRONT, GL_EMISSION, 0.0); #@Earth_emission);
+      #glMaterialf(GL_FRONT, GL_SPECULAR, 50.0); #@Earth_specular);
+
+      # Render Earth sphere
+      glBindTexture(GL_TEXTURE_2D, $Texture_ID[0]);
+      glColor3f(0.6, 0.6, 0.6);
+
       gluSphere($quad, 1.5, 64, 64);
       gluDeleteQuadric($quad);
   }
+
+=cut
+  # Render Earth atmosphere and clouds
+  glBindTexture(GL_TEXTURE_2D, $Texture_ID[1]);
+
+  glEnable(GL_BLEND);
+  glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+  glColor4f(1.0, 1.0, 1.0, 0.7);
+  if ($quad = gluNewQuadric()) {
+      gluQuadricNormals($quad, GLU_SMOOTH);
+      gluQuadricTexture($quad, GL_TRUE);
+      gluSphere($quad, 1.501, 64, 64);
+      gluDeleteQuadric($quad);
+  }
+  glDisable(GL_BLEND);
+=cut
+
+  glDisable(GL_LIGHTING);
+
+  display_spikes();
 
   # Move back to the origin (for the text, below).
   glLoadIdentity();
@@ -205,28 +299,28 @@ sub cbRenderScene {
   $buf = sprintf "Filt: %d", $Filtering_On;
   glRasterPos2i(2,62); ourPrintString(GLUT_BITMAP_HELVETICA_12,$buf);
 
-  # Now we want to render the calulated FPS at the top.
 
+  # Now we want to render the calulated FPS at the top.
   # To ease, simply translate up.  Note we're working in screen
   # pixels in this projection.
-
-  glTranslatef(6.0,$Window_Height - 14,0.0);
-
+  #  
+  #glTranslatef(6.0,$Window_Height - 14,0.0);
+  #  
   # Make sure we can read the FPS section by first placing a
   # dark, mostly opaque backdrop rectangle.
-  glColor4f(0.2,0.2,0.2,0.75);
+  #glColor4f(0.0, 0.0, 0.0, 0.75);
+  #  
+  #glBegin(GL_QUADS);
+  #glVertex3f(  0.0, -2.0, 0.0);
+  #glVertex3f(  0.0, 12.0, 0.0);
+  #glVertex3f(140.0, 12.0, 0.0);
+  #glVertex3f(140.0, -2.0, 0.0);
+  #glEnd();
 
-  glBegin(GL_QUADS);
-  glVertex3f(  0.0, -2.0, 0.0);
-  glVertex3f(  0.0, 12.0, 0.0);
-  glVertex3f(140.0, 12.0, 0.0);
-  glVertex3f(140.0, -2.0, 0.0);
-  glEnd();
-
-  glColor4f(0.9,0.2,0.2,.75);
-  $buf = sprintf "FPS: %f F: %2d", $FrameRate, $FrameCount;
-  glRasterPos2i(6,0);
-  ourPrintString(GLUT_BITMAP_HELVETICA_12,$buf);
+  #glColor4f(0.9, 0.0, 0.0, .75);
+  #$buf = sprintf "FPS: %f F: %2d", $FrameRate, $FrameCount;
+  #glRasterPos2i(6,0);
+  #ourPrintString(GLUT_BITMAP_HELVETICA_12,$buf);
 
   # Done with this special projection matrix.  Throw it away.
   glPopMatrix();
@@ -235,11 +329,11 @@ sub cbRenderScene {
   glutSwapBuffers();
 
   # Now let's do the motion calculations.
-  $X_Rot+=$X_Speed;
-  $Y_Rot+=$Y_Speed;
+  $X_Rot += $X_Speed;
+  $Y_Rot += $Y_Speed;
 
   # And collect our statistics.
-  ourDoFPS();
+  #ourDoFPS();
 }
 
 # ------
@@ -330,11 +424,11 @@ sub ourBuildTextures {
   my $gluerr;
 
   # Generate a texture index, then bind it for future operations.
-  my @Texture_ID = glGenTextures_p(1);
+  @Texture_ID = glGenTextures_p(1);
   glBindTexture(GL_TEXTURE_2D, $Texture_ID[0]);
 
   # Iterate across the texture array.
-  open my $texf, '<', 'earth-texture.bin';
+  open my $texf, '<', 'earth_4k2.texture';
   binmode $texf;
   my $tex = q{};
   my $buf;
@@ -346,8 +440,6 @@ sub ourBuildTextures {
   my $tex_h = 2048;
 
 =cut
-  #my $tex = File::Slurp::read_file('earthg.texture');
-
   use Imager;
 
   my $scanline;
@@ -355,18 +447,22 @@ sub ourBuildTextures {
   my $earth_pic = Imager->new();
   print "Reading earth pic...\n";
 
-  $earth_pic->read(file=>'earth_4096_2048.bmp') or die "Can't read texture!\n";
-  
-  print "Reading scanlines...\n";
+  $earth_pic->read(file=>'earth_4k2.bmp') or die "Can't read texture!\n";
+
+  print "Reading scanlines... ";
   my $tex_w = $earth_pic->getwidth();
   my $tex_h = $earth_pic->getheight();
+  my $perc = 0;
   for (my $y = $tex_h - 1; $y >= 0; $y--) {
       $scanline = $earth_pic->getscanline(y=>$y);
       $tex .= $scanline;
-  }
-  print "Texture built.\n";
+      $perc = int (100 * ($tex_h - 1 - $y) / $tex_h);
+      print "$perc%   \r";
 
-  open my $texf, '>', 'earth_big.texture'; 
+  }
+  print "\rTexture built.\n";
+
+  open my $texf, '>', 'earth_4k2.texture'; 
   binmode $texf;
   print $texf $tex;
   close $texf;
@@ -383,7 +479,70 @@ sub ourBuildTextures {
   glTexParameterf(GL_TEXTURE_2D,GL_TEXTURE_WRAP_S,GL_CLAMP);
   glTexParameterf(GL_TEXTURE_2D,GL_TEXTURE_WRAP_T,GL_CLAMP);
   glTexParameterf(GL_TEXTURE_2D,GL_TEXTURE_WRAP_R,GL_CLAMP);
+  glTexEnvi(GL_TEXTURE_ENV,GL_TEXTURE_ENV_MODE,GL_MODULATE);
 
+=cut
+  glBindTexture(GL_TEXTURE_2D, $Texture_ID[1]);
+
+  use Imager;
+
+  $tex = q{};
+  my $scanline;
+  my $pic = Imager->new();
+  print "Reading clouds pic...\n";
+
+  $pic->read(file=>'clouds.bmp') or die "Can't read texture!\n";
+
+  print "Reading scanlines...\n";
+  $tex_w = $pic->getwidth();
+  $tex_h = $pic->getheight();
+  for (my $y = $tex_h - 1; $y >= 0; $y--) {
+      $scanline = $pic->getscanline(y=>$y);
+      for (0 .. length($scanline)/4 - 1) {
+         my $red = ord substr($scanline, $_ * 4, 1);
+         $red -= 100;
+         if ($red < 0) { $red = 0 }
+         if ($red > 100) { $red += ($red - 100) * 2 }
+         if ($red > 255) { $red = 255 }
+         substr($scanline, $_ * 4 + 3, 1, pack("C",$red));
+      }
+      $tex .= $scanline;
+  }
+  print "Clouds Texture built.\n";
+
+  open my $texf, '>', 'clouds-texture.bin'; 
+  binmode $texf;
+  print $texf $tex;
+  close $texf;
+
+=cut
+
+=cut
+  open $texf, '<', 'clouds-texture.bin';
+  binmode $texf;
+  my $buf;
+  $tex = q{};
+  while (sysread($texf, $buf, 1048576)) {
+    $tex .= $buf;
+  }
+
+  $tex_w = 1024;
+  $tex_h = 512;
+
+  # The GLU library helps us build MipMaps for our texture.
+  if ($gluerr = gluBuild2DMipmaps_s(GL_TEXTURE_2D, 4, $tex_w, $tex_h, GL_RGBA, GL_UNSIGNED_BYTE, $tex)) {
+     printf STDERR "GLULib%s\n", gluErrorString($gluerr);
+     exit(-1);
+  }
+
+  glTexParameterf(GL_TEXTURE_2D,GL_TEXTURE_WRAP_S,GL_CLAMP);
+  glTexParameterf(GL_TEXTURE_2D,GL_TEXTURE_WRAP_T,GL_CLAMP);
+  glTexParameterf(GL_TEXTURE_2D,GL_TEXTURE_WRAP_R,GL_CLAMP);
+  glTexEnvi(GL_TEXTURE_ENV,GL_TEXTURE_ENV_MODE,GL_MODULATE);
+
+=cut
+
+  return;
 }
 
 # ------
@@ -438,6 +597,15 @@ sub ourInit {
   glLightfv_p(GL_LIGHT1, GL_AMBIENT,  @Light_Ambient);
   glLightfv_p(GL_LIGHT1, GL_DIFFUSE,  @Light_Diffuse);
   glEnable (GL_LIGHT1);
+
+  glHint(GL_LINE_SMOOTH_HINT, GL_FASTEST);
+  glEnable(GL_LINE_SMOOTH);
+
+  # Another one
+  #glLightfv_p(GL_LIGHT2, GL_POSITION, -5.0, -5.0, -10.0, 0.1);
+  #glLightfv_p(GL_LIGHT2, GL_AMBIENT,  @Light_Ambient);
+  #glLightfv_p(GL_LIGHT2, GL_DIFFUSE,  @Light_Diffuse);
+  #glEnable (GL_LIGHT2);
 
   # A handy trick -- have surface material mirror the color.
   glColorMaterial(GL_FRONT_AND_BACK,GL_AMBIENT_AND_DIFFUSE);
