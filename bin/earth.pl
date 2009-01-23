@@ -20,20 +20,21 @@ BEGIN { $| = 1 }
 
 use strict;
 use lib './lib';
+
 use OpenGL q(:all);
 use OpenGL::Earth::Coords;
+use OpenGL::Earth::Wiimote;
 
 use constant PROGRAM_TITLE => 'OpenGL Earth';
 
 # Some global variables
-
-my $earth_texture = '../textures/earth_4k2.texture';
 
 # Window and texture IDs, window width and height.
 my $Window_ID;
 my $Window_Width = 600;
 my $Window_Height = 600;
 our @Texture_ID;
+our $wii;
 
 # Our display mode settings.
 my $Light_On = 1;
@@ -52,7 +53,7 @@ my @TexModes = (GL_DECAL, GL_MODULATE, GL_BLEND, GL_REPLACE);
 my $X_Rot   = 300;
 my $Y_Rot   = 0.0;
 my $X_Speed = 0.0;
-my $Y_Speed = 0.1;
+my $Y_Speed = 0.02;
 my $Z_Off   =-5.0;
 
 # Settings for our light.  Try playing with these (or add more lights).
@@ -138,20 +139,18 @@ sub ourPrintString {
 sub display_spikes {
 
 	# Get one more spike
-	#if (1) { #! eof(STDIN)) {
-    #my $line = <STDIN>;
-    #my ($ip) = split(' ', $line, 2);
-    #my ($a, $b, $c, $d) = split m{\.}, $ip;
-    for (1..5) {
-        my $lon = rand(360) - 180;
-        my $lat = rand(180) - 90;
-        push @network_hits, [ $lat, $lon, 100 ];
-    }
-	#}
+	if (! eof(STDIN)) {
+		my $line = <STDIN>;
+		my ($ip) = split(' ', $line, 2);
+		my ($a, $b, $c, $d) = split m{\.}, $ip;
+		my $lon = rand(360) - 180;
+		my $lat = rand(180) - 90;
+		push @network_hits, [ $lat, $lon, 100 ];
+	}
 
     for my $s (@network_hits) {
         display_spike($s->[0], $s->[1], $s->[2], 1.5);
-		$s->[2] -= 4;
+		$s->[2]--;
     }
 
     @network_hits = grep { $_->[2] > 0 } @network_hits;
@@ -162,7 +161,6 @@ sub display_spikes {
 # Routine which actually does the drawing
 
 sub cbRenderScene {
-  my $buf; # For our strings.
 
   # Enables, disables or otherwise adjusts as
   # appropriate for our current settings.
@@ -259,6 +257,9 @@ sub cbRenderScene {
 
   display_spikes();
 
+  # Sense the wii motion
+  my $motion = OpenGL::Earth::Wiimote::get_motion($wii);
+
   # Move back to the origin (for the text, below).
   glLoadIdentity();
 
@@ -285,6 +286,7 @@ sub cbRenderScene {
   glColor4f(0.6,1.0,0.6,.75);
 
   # Render our various display mode settings.
+  my $buf;
   $buf = sprintf "Mode: %s", $TexModesStr[$Curr_TexMode];
   glRasterPos2i(2,2); ourPrintString(GLUT_BITMAP_HELVETICA_12,$buf);
 
@@ -303,6 +305,32 @@ sub cbRenderScene {
   $buf = sprintf "Filt: %d", $Filtering_On;
   glRasterPos2i(2,62); ourPrintString(GLUT_BITMAP_HELVETICA_12,$buf);
 
+  $buf = sprintf "XAcc: %3.3f", $motion->{force_x};
+  glRasterPos2i(2,74); ourPrintString(GLUT_BITMAP_HELVETICA_12,$buf);
+
+  $buf = sprintf "YAcc: %3.3f", $motion->{force_y};
+  glRasterPos2i(2,88); ourPrintString(GLUT_BITMAP_HELVETICA_12,$buf);
+
+  $buf = sprintf "ZAcc: %3.3f", $motion->{force_z};
+  glRasterPos2i(2,100); ourPrintString(GLUT_BITMAP_HELVETICA_12,$buf);
+
+  $buf = sprintf "XTilt: %3.3f", $motion->{tilt_x};
+  glRasterPos2i(2,114); ourPrintString(GLUT_BITMAP_HELVETICA_12,$buf);
+
+  $buf = sprintf "YTilt: %3.3f", $motion->{tilt_y};
+  glRasterPos2i(2,128); ourPrintString(GLUT_BITMAP_HELVETICA_12,$buf);
+
+  $buf = sprintf "Pitch: %3.3f", $motion->{tilt_z};
+  glRasterPos2i(2,142); ourPrintString(GLUT_BITMAP_HELVETICA_12,$buf);
+
+  $buf = sprintf "XAxis: %3.3f", $motion->{axis_x};
+  glRasterPos2i(2,156); ourPrintString(GLUT_BITMAP_HELVETICA_12,$buf);
+
+  $buf = sprintf "YAxis: %3.3f", $motion->{axis_y};
+  glRasterPos2i(2,170); ourPrintString(GLUT_BITMAP_HELVETICA_12,$buf);
+
+  $buf = sprintf "ZAxis: %3.3f", $motion->{axis_z};
+  glRasterPos2i(2,184); ourPrintString(GLUT_BITMAP_HELVETICA_12,$buf);
 
   # Now we want to render the calulated FPS at the top.
   # To ease, simply translate up.  Note we're working in screen
@@ -332,13 +360,82 @@ sub cbRenderScene {
   # All done drawing.  Let's show it.
   glutSwapBuffers();
 
-  # Now let's do the motion calculations.
-  $X_Rot += $X_Speed;
-  $Y_Rot += $Y_Speed;
+  #static_motion_calc($motion);
+  falloff_motion_calc($motion);
 
   # And collect our statistics.
   #ourDoFPS();
 }
+
+sub falloff_motion_calc {
+	my ($motion) = @_;
+
+	my $falloff_factor = 0.96;
+	my $acc = abs($motion->{force_x} / 15);
+
+    my $keys = OpenGL::Earth::Wiimote::get_keys($wii);
+	my $acc_pos = exists $keys->{A};
+	my $home = exists $keys->{home};
+
+	if ($home) {
+		$X_Rot = 300.0;
+		$Y_Rot = 0.0;
+		$X_Speed = 0.00;
+		$Y_Speed = 0.02;
+		return;
+	}
+
+	if (exists $keys->{up}) {
+		$Z_Off -= 0.01;
+	}
+	if (exists $keys->{down}) {
+		$Z_Off += 0.01;
+	}
+
+	if ($acc_pos) {
+		$X_Speed += $acc * ($X_Speed > 0 ? 1 : -1);
+		$Y_Speed += $acc * ($Y_Speed > 0 ? 1 : -1);
+	}
+	else {
+		$X_Speed += $motion->{tilt_z} * $acc;
+		$Y_Speed += $motion->{tilt_y} * $acc;
+	}
+
+	if ($X_Speed > 1) { $X_Speed = 1 }
+	if ($Y_Speed > 1) { $Y_Speed = 1 }
+
+	$X_Rot += $X_Speed;
+	$Y_Rot += $Y_Speed;
+
+	$X_Speed *= $falloff_factor;
+	$Y_Speed *= $falloff_factor;
+
+	return;
+}
+
+{
+	my $prev_tilt_x = 0.0;
+	my $prev_tilt_y = 0.0;
+
+	sub static_motion_calc {
+
+		my ($motion) = @_;
+
+		# Now let's do the motion calculations.
+		$X_Speed = ($motion->{tilt_z} - $prev_tilt_x) / 2;
+		$Y_Speed = ($motion->{tilt_y} - $prev_tilt_y) / 2;
+
+		$prev_tilt_x = $X_Speed;
+		$prev_tilt_y = $Y_Speed;
+
+		$X_Rot += $X_Speed;
+		$Y_Rot += $Y_Speed;
+
+		return;
+	}
+
+}
+
 
 # ------
 # Callback function called when a normal $key is pressed.
@@ -432,12 +529,7 @@ sub ourBuildTextures {
   glBindTexture(GL_TEXTURE_2D, $Texture_ID[0]);
 
   # Iterate across the texture array.
-  open(my $texf, '<', $earth_texture) or
-    do {
-        glutDestroyWindow($Window_ID);
-        die "Can't open Earth texture '$earth_texture': $!\n"
-    };
-
+  open my $texf, '<', 'earth_4k2.texture';
   binmode $texf;
   my $tex = q{};
   my $buf;
@@ -583,6 +675,8 @@ sub cbResizeScene {
 
 sub ourInit {
   my ($Width, $Height) = @_;
+
+  $wii = OpenGL::Earth::Wiimote::init();
 
   ourBuildTextures();
 
