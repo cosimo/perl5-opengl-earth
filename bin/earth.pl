@@ -370,8 +370,8 @@ sub cbRenderScene {
 sub falloff_motion_calc {
 	my ($motion) = @_;
 
-	my $falloff_factor = 0.96;
-	my $acc = abs($motion->{force_x} / 15);
+	my $falloff_factor = 0.98;
+	my $acc = abs($motion->{force_x} / 10);
 
     my $keys = OpenGL::Earth::Wiimote::get_keys($wii);
 	my $acc_pos = exists $keys->{A};
@@ -529,7 +529,7 @@ sub ourBuildTextures {
   glBindTexture(GL_TEXTURE_2D, $Texture_ID[0]);
 
   # Iterate across the texture array.
-  open my $texf, '<', 'earth_4k2.texture';
+  open my $texf, '<', '../textures/earth.texture';
   binmode $texf;
   my $tex = q{};
   my $buf;
