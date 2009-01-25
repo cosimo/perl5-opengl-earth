@@ -3,6 +3,7 @@
 # OpenGL texture-mapped Earth
 # 08/12/2008 <cosimo@cpan.org>
 #
+# -----------------------------------------------------------------
 # Originally based on OpenGL cube demo written by
 # Chris Halsall (chalsall@chalsall.com) for the
 # O'Reilly Network on Linux.com (oreilly.linux.com).
@@ -19,33 +20,17 @@
 BEGIN { $| = 1 }
 
 use strict;
-use lib './lib';
+use lib '../lib';
 
 use OpenGL q(:all);
+use OpenGL::Earth;
 use OpenGL::Earth::Coords;
+use OpenGL::Earth::NetworkHits;
+use OpenGL::Earth::Render;
+use OpenGL::Earth::Scene;
 use OpenGL::Earth::Wiimote;
 
 use constant PROGRAM_TITLE => 'OpenGL Earth';
-
-# Some global variables
-
-# Window and texture IDs, window width and height.
-my $Window_ID;
-my $Window_Width = 600;
-my $Window_Height = 600;
-our @Texture_ID;
-our $wii;
-
-# Our display mode settings.
-my $Light_On = 1;
-my $Blend_On = 0;
-my $Texture_On = 1;
-my $Filtering_On = 1;
-my $Alpha_Add = 0;
-
-my $Curr_TexMode = GL_MODULATE;
-my @TexModesStr = qw(GL_DECAL GL_MODULATE GL_BLEND GL_REPLACE);
-my @TexModes = (GL_DECAL, GL_MODULATE, GL_BLEND, GL_REPLACE);
 
 # Object and scene global variables.
 
@@ -56,106 +41,7 @@ my $X_Speed = 0.0;
 my $Y_Speed = 0.02;
 my $Z_Off   =-5.0;
 
-# Settings for our light.  Try playing with these (or add more lights).
-my @Light_Ambient  = ( 0.0, 0.0, 0.1, 0.2 );
-my @Light_Diffuse  = ( 1.2, 1.2, 1.2, 1.0 );
-my @Light_Position = ( 4.0, 4.0, 2.0, 3.0);
-
 our @network_hits = ();
-
-# Check-up grid
-#
-#for (my $x = -180; $x <= 180; $x += 10) {
-#	for (my $y = -90; $y <= 90; $y += 10) {
-#		push @spikes, [ $y, $x, 10 ];
-#	}
-#}
-
-=cut
-# ------
-# Frames per second (FPS) statistic variables and routine.
-
-use constant CLOCKS_PER_SEC => 1000;
-use constant FRAME_RATE_SAMPLES => 50;
-
-my $FrameCount = 0;
-my $FrameRate = 0;
-my $last=0;
-
-sub ourDoFPS {
-  my $now;
-  my $delta;
-
-  if (++$FrameCount >= FRAME_RATE_SAMPLES) {
-     $now  = Win32::GetTickCount(); # clock();
-     $delta= ($now - $last) / CLOCKS_PER_SEC;
-     $last = $now;
-
-     $FrameRate = FRAME_RATE_SAMPLES / $delta;
-     $FrameCount = 0;
-  }
-}
-=cut
-
-sub display_spike {
-  my ($lat, $long, $amount, $radius) = @_;
-
-  # Apply texture offset
-  $long -= 90;
-
-  my ($x1, $y1, $z1) = OpenGL::Earth::Coords::earth_to_xyz($lat, $long, $radius + $amount/200);
-  my ($x2, $y2, $z2) = OpenGL::Earth::Coords::earth_to_xyz($lat, $long + 0.4, $radius);
-  my ($x3, $y3, $z3) = OpenGL::Earth::Coords::earth_to_xyz($lat, $long - 0.4, $radius);
-
-  glBegin(GL_TRIANGLES);
-      glColor3f(1.0, 0.3, 0.3);
-      glVertex3f($x1, $y1, $z1);
-      glVertex3f($x2, $y2, $z2);
-      glVertex3f($x3, $y3, $z3);
-  glEnd();
-
-  #glLineWidth(1);
-  #glBegin(GL_LINES);
-  #    glColor4f(1.0, 0.2, 0.2, 0.6);
-  #    glVertex3f(0, 0, 0);
-  #    glVertex3f($x1, $y1, $z1);
-  #glEnd();
-
-  return;
-}
-
-# ------
-# String rendering routine; leverages on GLUT routine.
-
-sub ourPrintString {
-  my ($font, $str) = @_;
-  my @c = split '', $str;
-
-  for(@c) {
-    glutBitmapCharacter($font, ord $_);
-  }
-}
-
-sub display_spikes {
-
-	# Get one more spike
-	if (! eof(STDIN)) {
-		my $line = <STDIN>;
-		my ($ip) = split(' ', $line, 2);
-		my ($a, $b, $c, $d) = split m{\.}, $ip;
-		my $lon = rand(360) - 180;
-		my $lat = rand(180) - 90;
-		push @network_hits, [ $lat, $lon, 100 ];
-	}
-
-    for my $s (@network_hits) {
-        display_spike($s->[0], $s->[1], $s->[2], 1.5);
-		$s->[2]--;
-    }
-
-    @network_hits = grep { $_->[2] > 0 } @network_hits;
-
-}
 
 # ------
 # Routine which actually does the drawing
@@ -255,7 +141,7 @@ sub cbRenderScene {
 
   glDisable(GL_LIGHTING);
 
-  display_spikes();
+  OpenGL::Earth::NetworkHits::display(\@network_hits);
 
   # Sense the wii motion
   my $motion = OpenGL::Earth::Wiimote::get_motion($wii);
@@ -263,99 +149,7 @@ sub cbRenderScene {
   # Move back to the origin (for the text, below).
   glLoadIdentity();
 
-  # We need to change the projection matrix for the text rendering.
-  glMatrixMode(GL_PROJECTION);
-
-  # But we like our current view too; so we save it here.
-  glPushMatrix();
-
-  # Now we set up a new projection for the text.
-  glLoadIdentity();
-  glOrtho(0,$Window_Width,0,$Window_Height,-1.0,1.0);
-
-  # Lit or textured text looks awful.
-  glDisable(GL_TEXTURE_2D);
-  glDisable(GL_TEXTURE_GEN_S);
-  glDisable(GL_TEXTURE_GEN_T);
-  glDisable(GL_LIGHTING);
-
-  # We don'$t want depth-testing either.
-  glDisable(GL_DEPTH_TEST);
-
-  # But, for fun, let's make the text partially transparent too.
-  glColor4f(0.6,1.0,0.6,.75);
-
-  # Render our various display mode settings.
-  my $buf;
-  $buf = sprintf "Mode: %s", $TexModesStr[$Curr_TexMode];
-  glRasterPos2i(2,2); ourPrintString(GLUT_BITMAP_HELVETICA_12,$buf);
-
-  $buf = sprintf "AAdd: %d", $Alpha_Add;
-  glRasterPos2i(2,14); ourPrintString(GLUT_BITMAP_HELVETICA_12,$buf);
-
-  $buf = sprintf "Blend: %d", $Blend_On;
-  glRasterPos2i(2,26); ourPrintString(GLUT_BITMAP_HELVETICA_12,$buf);
-
-  $buf = sprintf "Light: %d", $Light_On;
-  glRasterPos2i(2,38); ourPrintString(GLUT_BITMAP_HELVETICA_12,$buf);
-
-  $buf = sprintf "Tex: %d", $Texture_On;
-  glRasterPos2i(2,50); ourPrintString(GLUT_BITMAP_HELVETICA_12,$buf);
-
-  $buf = sprintf "Filt: %d", $Filtering_On;
-  glRasterPos2i(2,62); ourPrintString(GLUT_BITMAP_HELVETICA_12,$buf);
-
-  $buf = sprintf "XAcc: %3.3f", $motion->{force_x};
-  glRasterPos2i(2,74); ourPrintString(GLUT_BITMAP_HELVETICA_12,$buf);
-
-  $buf = sprintf "YAcc: %3.3f", $motion->{force_y};
-  glRasterPos2i(2,88); ourPrintString(GLUT_BITMAP_HELVETICA_12,$buf);
-
-  $buf = sprintf "ZAcc: %3.3f", $motion->{force_z};
-  glRasterPos2i(2,100); ourPrintString(GLUT_BITMAP_HELVETICA_12,$buf);
-
-  $buf = sprintf "XTilt: %3.3f", $motion->{tilt_x};
-  glRasterPos2i(2,114); ourPrintString(GLUT_BITMAP_HELVETICA_12,$buf);
-
-  $buf = sprintf "YTilt: %3.3f", $motion->{tilt_y};
-  glRasterPos2i(2,128); ourPrintString(GLUT_BITMAP_HELVETICA_12,$buf);
-
-  $buf = sprintf "Pitch: %3.3f", $motion->{tilt_z};
-  glRasterPos2i(2,142); ourPrintString(GLUT_BITMAP_HELVETICA_12,$buf);
-
-  $buf = sprintf "XAxis: %3.3f", $motion->{axis_x};
-  glRasterPos2i(2,156); ourPrintString(GLUT_BITMAP_HELVETICA_12,$buf);
-
-  $buf = sprintf "YAxis: %3.3f", $motion->{axis_y};
-  glRasterPos2i(2,170); ourPrintString(GLUT_BITMAP_HELVETICA_12,$buf);
-
-  $buf = sprintf "ZAxis: %3.3f", $motion->{axis_z};
-  glRasterPos2i(2,184); ourPrintString(GLUT_BITMAP_HELVETICA_12,$buf);
-
-  # Now we want to render the calulated FPS at the top.
-  # To ease, simply translate up.  Note we're working in screen
-  # pixels in this projection.
-  #  
-  #glTranslatef(6.0,$Window_Height - 14,0.0);
-  #  
-  # Make sure we can read the FPS section by first placing a
-  # dark, mostly opaque backdrop rectangle.
-  #glColor4f(0.0, 0.0, 0.0, 0.75);
-  #  
-  #glBegin(GL_QUADS);
-  #glVertex3f(  0.0, -2.0, 0.0);
-  #glVertex3f(  0.0, 12.0, 0.0);
-  #glVertex3f(140.0, 12.0, 0.0);
-  #glVertex3f(140.0, -2.0, 0.0);
-  #glEnd();
-
-  #glColor4f(0.9, 0.0, 0.0, .75);
-  #$buf = sprintf "FPS: %f F: %2d", $FrameRate, $FrameCount;
-  #glRasterPos2i(6,0);
-  #ourPrintString(GLUT_BITMAP_HELVETICA_12,$buf);
-
-  # Done with this special projection matrix.  Throw it away.
-  glPopMatrix();
+  OpenGL::Earth::Render::text_stats();
 
   # All done drawing.  Let's show it.
   glutSwapBuffers();
