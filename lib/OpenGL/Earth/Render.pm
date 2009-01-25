@@ -4,7 +4,7 @@ package OpenGL::Earth::Render;
 
 use strict;
 use warnings;
-use OpenGL;
+use OpenGL q(:all);
 
 sub string {
     my ( $font, $str ) = @_;
