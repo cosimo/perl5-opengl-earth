@@ -1,0 +1,19 @@
+bin/earth.pl
+bin/runit.bat
+bin/runit.sh
+Changes
+examples/coords.pl
+lib/OpenGL/Earth.pm
+lib/OpenGL/Earth/Coords.pm
+lib/OpenGL/Earth/NetworkHits.pm
+lib/OpenGL/Earth/Render.pm
+lib/OpenGL/Earth/Scene.pm
+lib/OpenGL/Earth/Wiimote.pm
+Makefile.PL
+MANIFEST			This list of files
+t/opengl-earth-coords.t
+t/opengl-earth-networkhits.t
+t/opengl-earth-render.t
+t/opengl-earth-scene.t
+t/opengl-earth.t
+textures/earth.texture
