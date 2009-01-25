@@ -1,3 +1,4 @@
 #!/bin/sh
-cat ../glearth/earth.log | /usr/bin/env perl -I ../lib ./earth.pl
+#cat ../glearth/earth.log | /usr/bin/env perl ./earth.pl
+/usr/bin/env perl ./earth.pl
 
