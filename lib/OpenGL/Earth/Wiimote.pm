@@ -7,7 +7,12 @@ package OpenGL::Earth::Wiimote;
 
 use strict;
 use Carp;
-use Linux::Input::Wiimote;
+
+our $HAVE_WIIMOTE = 0;
+
+if ($^O =~ m{Linux}i) {
+    eval 'use Linux::Input::Wiimote; $HAVE_WIIMOTE = 1;';
+}
 
 sub disconnect {
 	my ($wii) = @_;
