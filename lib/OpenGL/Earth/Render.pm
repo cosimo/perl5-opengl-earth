@@ -16,7 +16,7 @@ sub string {
 
 sub text_stats {
     my ($motion) = @_;
-    my ( $width, $height ) = ( 600, 600 );
+    my ($width, $height) = ( 600, 600 );
 
     # We need to change the projection matrix for the text rendering.
     glMatrixMode(GL_PROJECTION);
@@ -37,14 +37,11 @@ sub text_stats {
 
     # We don'$t want depth-testing either.
     glDisable(GL_DEPTH_TEST);
-
-    # But, for fun, let's make the text partially transparent too.
     glColor4f( 0.6, 1.0, 0.6, .75 );
 
     # Render our various display mode settings.
     my $buf;
-    $buf = sprintf "Mode: %s",
-      $OpenGL::Earth::TEXTURE_MODE;    #$TexModesStr[$Curr_TexMode];
+    $buf = sprintf "Mode: %s", $OpenGL::Earth::TEXTURE_MODE;
     glRasterPos2i( 2, 2 );
     string( GLUT_BITMAP_HELVETICA_12, $buf );
 

@@ -9,18 +9,29 @@ use strict;
 use Carp;
 
 our $HAVE_WIIMOTE = 0;
+our $HANDLE;
 
 if ($^O =~ m{Linux}i) {
     eval 'use Linux::Input::Wiimote; $HAVE_WIIMOTE = 1;';
 }
 
 sub disconnect {
-	my ($wii) = @_;
+	my ($wii) = $HANDLE;
 	$wii->disconnect();
 }
 
+sub fake_keys {
+    my $keys = {};
+}
+
 sub get_keys {
-	my ($wii) = @_;
+
+	my ($wii) = $HANDLE;
+
+    if (! $HAVE_WIIMOTE) {
+        return fake_keys();
+    }
+
 	my $k = {};
 
     if ( $wii->get_wiimote_keys_home ) {
@@ -60,12 +71,35 @@ sub get_keys {
 	return $k;
 }
 
-sub get_motion ($) {
+sub fake_motion {
 
-	my ($wii) = @_;
-	my $mt = {};
+    my $motion = {
+        axis_x => 0x7F,
+        axis_y => 0x7F,
+        axis_z => 0x7F,
+        tilt_x => 0,
+        tilt_y => 0,
+        tilt_z => 0,
+        force_x=> 1.0,
+        force_y=> 0,
+        force_z=> 0,
+    };
+
+    return $motion;
+}
+
+sub get_motion {
+
+	my ($wii) = $HANDLE;
+
+    # Return a fake no-motion struct
+    if (! $HAVE_WIIMOTE) {
+        return fake_motion();
+    }
 
 	$wii->wiimote_update();
+
+	my $mt = {};
 
 	$mt->{axis_x} = $wii->get_wiimote_axis_x();
     $mt->{axis_y} = $wii->get_wiimote_axis_y();
@@ -83,6 +117,11 @@ sub get_motion ($) {
 }
 
 sub init {
+
+    if (! $HAVE_WIIMOTE) {
+        return;
+    }
+
 	my $wii = Linux::Input::Wiimote->new();
 	my $addr = '00:1F:C5:06:5E:BB';
 
@@ -97,7 +136,7 @@ sub init {
 	$wii->set_wiimote_ir(1);
 	$wii->activate_wiimote_accelerometer();
 
-	return $wii;
+	return ($HANDLE = $wii);
 }
 
 1;

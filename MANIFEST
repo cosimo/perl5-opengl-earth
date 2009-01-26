@@ -16,4 +16,3 @@ t/opengl-earth-networkhits.t
 t/opengl-earth-render.t
 t/opengl-earth-scene.t
 t/opengl-earth.t
-textures/earth.texture

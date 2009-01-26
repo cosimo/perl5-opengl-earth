@@ -7,8 +7,10 @@ use warnings;
 use OpenGL;
 use OpenGL::Earth::Coords;
 
+our @NETWORK_HITS;
+
 sub display {
-	my ($hits) = @_;
+	my ($hits) = \@NETWORK_HITS;
 
 	push @{ $hits }, generate_random();
 
