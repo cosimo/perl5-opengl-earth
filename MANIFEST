@@ -6,6 +6,7 @@ examples/coords.pl
 lib/OpenGL/Earth.pm
 lib/OpenGL/Earth/Coords.pm
 lib/OpenGL/Earth/NetworkHits.pm
+lib/OpenGL/Earth/Physics.pm
 lib/OpenGL/Earth/Render.pm
 lib/OpenGL/Earth/Scene.pm
 lib/OpenGL/Earth/Wiimote.pm
@@ -14,5 +15,8 @@ MANIFEST			This list of files
 t/opengl-earth-coords.t
 t/opengl-earth-networkhits.t
 t/opengl-earth-render.t
+t/opengl-earth-physics.t
 t/opengl-earth-scene.t
 t/opengl-earth.t
+textures/README
+

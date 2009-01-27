@@ -49,7 +49,7 @@ It's an attempt to write an OpenGL Perl program that can display
 a fancy rotating planet, while also displaying useful
 geographic information on it.
 
-The development stage is really early now.
+The development is in a really really early stage now (Jan 2009).
 Don't expect miracles.
 
 It's basically a 10-years old OpenGL C program, translated

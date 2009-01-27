@@ -126,7 +126,10 @@ sub ourBuildTextures {
   glBindTexture(GL_TEXTURE_2D, $OpenGL::Earth::TEXTURES[0]);
 
   # Iterate across the texture array.
-  open my $texf, '<', '../textures/earth.texture';
+  open my $texf, '<', '../textures/earth.texture'
+    or die "Please read this distribution textures/README file\n"
+        . "for instructions on how to download a pre-made Earth texture\n";
+
   binmode $texf;
   my $tex = q{};
   my $buf;
