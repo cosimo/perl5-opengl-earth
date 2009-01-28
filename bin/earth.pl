@@ -36,80 +36,78 @@ use constant PROGRAM_TITLE => 'OpenGL Earth';
 # Callback function called when a normal $key is pressed.
 
 sub cbKeyPressed {
-  my $key = shift;
-  my $c = uc chr $key;
-  if ($key == 27 or $c eq 'Q') {
-    glutDestroyWindow($OpenGL::Earth::WINDOW_ID);
-    exit(1);
-  }
-  elsif ($c eq 'B' ) { # B - Blending.
-    $OpenGL::Earth::BLEND_ON = $OpenGL::Earth::BLEND_ON ? 0 : 1;
-    if (!$OpenGL::Earth::BLEND_ON) {
-      glDisable(GL_BLEND);
+    my $key = shift;
+    my $c   = uc chr $key;
+    if ( $key == 27 or $c eq 'Q' ) {
+        glutDestroyWindow($OpenGL::Earth::WINDOW_ID);
+        exit(1);
+    }
+    elsif ( $c eq 'B' ) {    # B - Blending.
+        $OpenGL::Earth::BLEND_ON = $OpenGL::Earth::BLEND_ON ? 0 : 1;
+        if ( !$OpenGL::Earth::BLEND_ON ) {
+            glDisable(GL_BLEND);
+        }
+        else {
+            glEnable(GL_BLEND);
+        }
+    }
+    elsif ( $c eq 'L' ) {    # L - Lighting
+        $OpenGL::Earth::LIGHT_ON = $OpenGL::Earth::LIGHT_ON ? 0 : 1;
+    }
+    elsif ( $c eq 'M' ) {    # M - Mode of Blending
+        if ( ++$OpenGL::Earth::TEXTURE_MODE > 3 ) {
+            $OpenGL::Earth::TEXTURE_MODE = 0;
+        }
+        glTexEnvi( GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE,
+            $OpenGL::Earth::TEXTURE_MODES[$OpenGL::Earth::TEXTURE_MODE] );
+    }
+    elsif ( $c eq 'T' ) {    # T - Texturing.
+        $OpenGL::Earth::TEXTURE_ON = $OpenGL::Earth::TEXTURE_ON ? 0 : 1;
+    }
+    elsif ( $c eq 'A' ) {    # A - Alpha-blending hack.
+        $OpenGL::Earth::ALPHA_ADD = $OpenGL::Earth::ALPHA_ADD ? 0 : 1;
+    }
+    elsif ( $c eq 'F' ) {    # F - Filtering.
+        $OpenGL::Earth::FILTERING_ON = $OpenGL::Earth::FILTERING_ON ? 0 : 1;
+    }
+    elsif ( $c eq 'S' or $key == 32 ) {    # S (Space) - Freeze!
+        OpenGL::Earth::Physics::stop();
+    }
+    elsif ( $c eq 'R' ) {                  # R - Reverse.
+        OpenGL::Earth::Physics::reverse_motion();
     }
     else {
-      glEnable(GL_BLEND);
+        printf "KP: No action for %d.\n", $key;
     }
-  }
-  elsif ($c eq 'L') {        # L - Lighting
-    $OpenGL::Earth::LIGHT_ON = $OpenGL::Earth::LIGHT_ON ? 0 : 1;
-  }
-  elsif ($c eq 'M') {        # M - Mode of Blending
-    if ( ++ $OpenGL::Earth::TEXTURE_MODE > 3 ) {
-      $OpenGL::Earth::TEXTURE_MODE = 0;
-    }
-    glTexEnvi(
-        GL_TEXTURE_ENV,GL_TEXTURE_ENV_MODE,
-        $OpenGL::Earth::TEXTURE_MODES[$OpenGL::Earth::TEXTURE_MODE]
-    );
-  }
-  elsif ($c eq 'T') {        # T - Texturing.
-    $OpenGL::Earth::TEXTURE_ON = $OpenGL::Earth::TEXTURE_ON ? 0 : 1;
-  }
-  elsif ($c eq 'A') {        # A - Alpha-blending hack.
-    $OpenGL::Earth::ALPHA_ADD = $OpenGL::Earth::ALPHA_ADD ? 0 : 1;
-  }
-  elsif ($c eq 'F') {        # F - Filtering.
-    $OpenGL::Earth::FILTERING_ON = $OpenGL::Earth::FILTERING_ON ? 0 : 1;
-  }
-  elsif ($c eq 'S' or $key == 32) {  # S (Space) - Freeze!
-    OpenGL::Earth::Physics::stop();
-  }
-  elsif ($c eq 'R') {        # R - Reverse.
-    OpenGL::Earth::Physics::reverse_motion();
-  }
-  else {
-    printf "KP: No action for %d.\n", $key;
-  }
 }
 
 # ------
 # Callback Function called when a special $key is pressed.
 
 sub cbSpecialKeyPressed {
-  my $key = shift;
+    my $key = shift;
 
-  if ($key == GLUT_KEY_PAGE_UP) { # move the cube into the distance.
-    $OpenGL::Earth::Physics::Z_OFF -= 0.05;
-  }
-  elsif ($key == GLUT_KEY_PAGE_DOWN) { # move the cube closer.
-    $OpenGL::Earth::Physics::Z_OFF += 0.05;
-  }
-  elsif ($key == GLUT_KEY_UP) { # decrease $x rotation speed;
-    $OpenGL::Earth::Physics::X_SPEED -= 0.01;
-  }
-  elsif ($key == GLUT_KEY_DOWN) { # increase $x rotation speed;
-    $OpenGL::Earth::Physics::X_SPEED += 0.01;
-  }
-  elsif ($key == GLUT_KEY_LEFT) { # decrease $y rotation speed;
-    $OpenGL::Earth::Physics::Y_SPEED -= 0.01;
-  }
-  elsif ($key == GLUT_KEY_RIGHT) { # increase $y rotation speed;
-    $OpenGL::Earth::Physics::Y_SPEED += 0.01;
-  }
-  else {
-    printf "SKP: No action for %d.\n", $key;
-  }
+    if ( $key == GLUT_KEY_PAGE_UP ) {    # move the cube into the distance.
+        $OpenGL::Earth::Physics::Z_OFF -= 0.05;
+    }
+    elsif ( $key == GLUT_KEY_PAGE_DOWN ) {    # move the cube closer.
+        $OpenGL::Earth::Physics::Z_OFF += 0.05;
+    }
+    elsif ( $key == GLUT_KEY_UP ) {           # decrease $x rotation speed;
+        $OpenGL::Earth::Physics::X_SPEED -= 0.01;
+    }
+    elsif ( $key == GLUT_KEY_DOWN ) {         # increase $x rotation speed;
+        $OpenGL::Earth::Physics::X_SPEED += 0.01;
+    }
+    elsif ( $key == GLUT_KEY_LEFT ) {         # decrease $y rotation speed;
+        $OpenGL::Earth::Physics::Y_SPEED -= 0.01;
+    }
+    elsif ( $key == GLUT_KEY_RIGHT ) {        # increase $y rotation speed;
+        $OpenGL::Earth::Physics::Y_SPEED += 0.01;
+    }
+    else {
+        printf "SKP: No action for %d.\n", $key;
+    }
 }
 
 # ------
@@ -119,26 +117,26 @@ sub cbSpecialKeyPressed {
 # input.
 
 sub ourBuildTextures {
-  my $gluerr;
+    my $gluerr;
 
-  # Generate a texture index, then bind it for future operations.
-  @OpenGL::Earth::TEXTURES = glGenTextures_p(1);
-  glBindTexture(GL_TEXTURE_2D, $OpenGL::Earth::TEXTURES[0]);
+    # Generate a texture index, then bind it for future operations.
+    @OpenGL::Earth::TEXTURES = glGenTextures_p(1);
+    glBindTexture( GL_TEXTURE_2D, $OpenGL::Earth::TEXTURES[0] );
 
-  # Iterate across the texture array.
-  open my $texf, '<', '../textures/earth.texture'
-    or die "Please read this distribution textures/README file\n"
-        . "for instructions on how to download a pre-made Earth texture\n";
+    # Iterate across the texture array.
+    open my $texf, '<', '../textures/earth-1024x512.texture'
+      or die "Please read this distribution textures/README file\n"
+      . "for instructions on how to download a pre-made Earth texture\n";
 
-  binmode $texf;
-  my $tex = q{};
-  my $buf;
-  while (sysread($texf, $buf, 1048576)) {
-    $tex .= $buf;
-  }
+    binmode $texf;
+    my $tex = q{};
+    my $buf;
+    while ( sysread( $texf, $buf, 1048576 ) ) {
+        $tex .= $buf;
+    }
 
-  my $tex_w = 4096;
-  my $tex_h = 2048;
+    my $tex_w = 1024;
+    my $tex_h = 512;
 
 =cut
   use Imager;
@@ -148,7 +146,7 @@ sub ourBuildTextures {
   my $earth_pic = Imager->new();
   print "Reading earth pic...\n";
 
-  $earth_pic->read(file=>'earth_4k2.bmp') or die "Can't read texture!\n";
+  $earth_pic->read(file=>'../textures/earth-1024x512.bmp') or die "Can't read texture!\n";
 
   print "Reading scanlines... ";
   my $tex_w = $earth_pic->getwidth();
@@ -163,24 +161,30 @@ sub ourBuildTextures {
   }
   print "\rTexture built.\n";
 
-  open my $texf, '>', 'earth_4k2.texture'; 
+  open my $texf, '>', '../textures/earth-1024x512.texture'; 
   binmode $texf;
   print $texf $tex;
   close $texf;
 
 =cut
 
-  # The GLU library helps us build MipMaps for our texture.
-  if ($gluerr = gluBuild2DMipmaps_s(GL_TEXTURE_2D, 4, $tex_w, $tex_h, GL_RGBA, GL_UNSIGNED_BYTE, $tex)) {
-     printf STDERR "GLULib%s\n", gluErrorString($gluerr);
-     exit(-1);
-  }
+    # The GLU library helps us build MipMaps for our texture.
+    if (
+        $gluerr =
+        gluBuild2DMipmaps_s( GL_TEXTURE_2D, 4, $tex_w, $tex_h, GL_RGBA,
+            GL_UNSIGNED_BYTE, $tex
+        )
+      )
+    {
+        printf STDERR "GLULib%s\n", gluErrorString($gluerr);
+        exit(-1);
+    }
 
-  # Some pretty standard settings for wrapping and filtering.
-  glTexParameterf(GL_TEXTURE_2D,GL_TEXTURE_WRAP_S,GL_CLAMP);
-  glTexParameterf(GL_TEXTURE_2D,GL_TEXTURE_WRAP_T,GL_CLAMP);
-  glTexParameterf(GL_TEXTURE_2D,GL_TEXTURE_WRAP_R,GL_CLAMP);
-  glTexEnvi(GL_TEXTURE_ENV,GL_TEXTURE_ENV_MODE,GL_MODULATE);
+    # Some pretty standard settings for wrapping and filtering.
+    glTexParameterf( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP );
+    glTexParameterf( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP );
+    glTexParameterf( GL_TEXTURE_2D, GL_TEXTURE_WRAP_R, GL_CLAMP );
+    glTexEnvi( GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE );
 
 =cut
   glBindTexture(GL_TEXTURE_2D, $OpenGL::Earth::TEXTURES[1]);
@@ -243,7 +247,7 @@ sub ourBuildTextures {
 
 =cut
 
-  return;
+    return;
 }
 
 # ------
@@ -251,35 +255,35 @@ sub ourBuildTextures {
 # OpenGL event loop.
 
 sub ourInit {
-  my ($Width, $Height) = @_;
+    my ( $Width, $Height ) = @_;
 
-  OpenGL::Earth::Wiimote::init();
+    OpenGL::Earth::Wiimote::init();
 
-  ourBuildTextures();
+    ourBuildTextures();
 
-  glutFullScreen();
+    glutFullScreen();
 
-  # Color to clear color buffer to.
-  glClearColor(0.0, 0.0, 0.0, 0.0);
+    # Color to clear color buffer to.
+    glClearColor( 0.0, 0.0, 0.0, 0.0 );
 
-  # Depth to clear depth buffer to; type of test.
-  glClearDepth(1.0);
-  glDepthFunc(GL_LESS);
+    # Depth to clear depth buffer to; type of test.
+    glClearDepth(1.0);
+    glDepthFunc(GL_LESS);
 
-  # Enables Smooth Color Shading; try GL_FLAT for (lack of) fun.
-  glShadeModel(GL_SMOOTH);
+    # Enables Smooth Color Shading; try GL_FLAT for (lack of) fun.
+    glShadeModel(GL_SMOOTH);
 
-  # Load up the correct perspective matrix; using a callback directly.
-  OpenGL::Earth::Scene::resize($Width, $Height);
+    # Load up the correct perspective matrix; using a callback directly.
+    OpenGL::Earth::Scene::resize( $Width, $Height );
 
-  # Set up a light, turn it on.
-  OpenGL::Earth::Scene::setup_lighting();
+    # Set up a light, turn it on.
+    OpenGL::Earth::Scene::setup_lighting();
 
-  glHint(GL_LINE_SMOOTH_HINT, GL_FASTEST);
-  glEnable(GL_LINE_SMOOTH);
+    glHint( GL_LINE_SMOOTH_HINT, GL_FASTEST );
+    glEnable(GL_LINE_SMOOTH);
 
-  glColorMaterial(GL_FRONT_AND_BACK,GL_AMBIENT_AND_DIFFUSE);
-  glEnable(GL_COLOR_MATERIAL);
+    glColorMaterial( GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE );
+    glEnable(GL_COLOR_MATERIAL);
 
 }
 
@@ -287,31 +291,31 @@ sub ourInit {
 # The main() function.  Inits OpenGL.  Calls our own init function,
 # then passes control onto OpenGL.
 
-
 glutInit();
 
 # To see OpenGL drawing, take out the GLUT_DOUBLE request.
-glutInitDisplayMode(GLUT_RGBA | GLUT_DOUBLE | GLUT_DEPTH);
-glutInitWindowSize($OpenGL::Earth::WINDOW_WIDTH, $OpenGL::Earth::WINDOW_HEIGHT);
+glutInitDisplayMode( GLUT_RGBA | GLUT_DOUBLE | GLUT_DEPTH );
+glutInitWindowSize( $OpenGL::Earth::WINDOW_WIDTH,
+    $OpenGL::Earth::WINDOW_HEIGHT );
 
 # Open a window
-$OpenGL::Earth::WINDOW_ID = glutCreateWindow( PROGRAM_TITLE );
+$OpenGL::Earth::WINDOW_ID = glutCreateWindow(PROGRAM_TITLE);
 
 # Register the callback function to do the drawing.
-glutDisplayFunc(\&OpenGL::Earth::Scene::render);
+glutDisplayFunc( \&OpenGL::Earth::Scene::render );
 
 # If there's nothing to do, draw.
-glutIdleFunc(\&OpenGL::Earth::Scene::render);
+glutIdleFunc( \&OpenGL::Earth::Scene::render );
 
 # It's a good idea to know when our window's resized.
-glutReshapeFunc(\&OpenGL::Earth::Scene::resize);
+glutReshapeFunc( \&OpenGL::Earth::Scene::resize );
 
 # And let's get some keyboard input.
-glutKeyboardFunc(\&cbKeyPressed);
-glutSpecialFunc(\&cbSpecialKeyPressed);
+glutKeyboardFunc( \&cbKeyPressed );
+glutSpecialFunc( \&cbSpecialKeyPressed );
 
 # OK, OpenGL's ready to go.  Let's call our own init function.
-ourInit($OpenGL::Earth::WINDOW_WIDTH, $OpenGL::Earth::WINDOW_HEIGHT);
+ourInit( $OpenGL::Earth::WINDOW_WIDTH, $OpenGL::Earth::WINDOW_HEIGHT );
 
 # Print out a bit of help dialog.
 print PROGRAM_TITLE, "\n";
@@ -321,7 +325,6 @@ Page up/down will move the earth away from/towards camera.
 Use first letter of shown display mode settings to alter.
 Q or [Esc] to quit; OpenGL window must have focus for input.
 TXT
-;
 
 # Pass off control to OpenGL.
 # Above functions are called as appropriate.
