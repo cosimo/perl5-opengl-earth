@@ -1,10 +1,10 @@
-Here there's an empty directory for now.
-There should really be a texture of the earth, but
-it's too big to be included in a CPAN archive maybe...
+In this folder there should be different versions
+of the main Earth texture. One is the low-res (1024x512) version,
+which is included right now.
 
-You can download it (32 Mbytes) from:
+In the future, I will probably include also the high-res
+version (4096x2048), but it's very big for a CPAN
+distribution (~ 32 Mb).
 
-http://files.myopera.com/cstrep/opengl_earth/earth.texture
-
-and put it in this folder.
+Cosimo, 27/Jan/2009
 
