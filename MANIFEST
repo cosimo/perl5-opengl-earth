@@ -18,5 +18,5 @@ t/opengl-earth-render.t
 t/opengl-earth-physics.t
 t/opengl-earth-scene.t
 t/opengl-earth.t
-textures/README
-
+textures/earth-1024x512.bmp
+textures/earth-1024x512.texture

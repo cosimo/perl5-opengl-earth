@@ -2,7 +2,7 @@
 
 package OpenGL::Earth;
 
-$VERSION = '0.01';
+$VERSION = '0.02';
 
 use strict;
 use warnings;
@@ -55,6 +55,15 @@ Don't expect miracles.
 It's basically a 10-years old OpenGL C program, translated
 to Perl like 8 years ago, and then butchered and reassembled
 by yours truly during some nightly hacking sessions.
+
+The Earth texture that comes with this distribution is a stripped
+down version (1024x512) of the original hi-res (4096x2048) I
+downloaded from Celestia Motherlode, if I remember correctly.
+
+If you want to use the higher resolution texture, either find
+it yourself, or write me, or generate one by yourself with the
+C<bin/build_texture.pl> utility I wrote.
+You will need the mighty C<Imager> module for that.
 
 =head1 AUTHORS
 
