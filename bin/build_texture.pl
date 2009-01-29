@@ -12,11 +12,16 @@ use strict;
 use warnings;
 use Imager;
 
+if (! @ARGV) {
+    die "Usage: $0 <file.(jpg|bmp|png)>\n";
+}
+
 my $scanline;
 my $tex = q{};
 my $pic = Imager->new();
 
 print "Reading bitmap...\n";
+
 
 $pic->read(file=>$ARGV[0])
     or die "Can't read texture bitmap!\n";
