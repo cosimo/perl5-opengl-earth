@@ -1,7 +1,6 @@
 #
 # Nintendo Wiimote controller class
 #
-# $Id$
 
 package OpenGL::Earth::Wiimote;
 

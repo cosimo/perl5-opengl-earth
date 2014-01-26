@@ -1,7 +1,6 @@
 #
 # Coordinates system related functions
 #
-# $Id$
 
 package OpenGL::Earth::Coords;
 

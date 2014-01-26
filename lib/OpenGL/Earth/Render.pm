@@ -1,5 +1,3 @@
-# $Id$
-
 package OpenGL::Earth::Render;
 
 use strict;

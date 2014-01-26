@@ -1,8 +1,6 @@
-# $Id$
-
 package OpenGL::Earth;
 
-$VERSION = '0.02';
+$VERSION = '0.05';
 
 use strict;
 use warnings;

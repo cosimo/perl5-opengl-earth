@@ -15,7 +15,6 @@
 # Translated from C to Perl by J-L Morel <jl_morel@bribes.org>
 # (http://www.bribes.org/perl/wopengl.html)
 #
-# $Id$
 
 BEGIN { $| = 1 }
 

@@ -1,5 +1,3 @@
-# $Id$
-
 package OpenGL::Earth::NetworkHits;
 
 use strict;
